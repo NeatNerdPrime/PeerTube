@@ -50,7 +50,11 @@ export class PluginService implements ClientHook {
     video: []
   }
   private settingsScripts: { [ npmName: string ]: RegisterClientSettingsScriptOptions } = {}
-  private clientRoutes: { [ route: string ]: RegisterClientRouteOptions } = {}
+  private clientRoutes: {
+    [ parentRoute in RegisterClientRouteOptions['parentRoute'] ]?: {
+      [ route: string ]: RegisterClientRouteOptions
+    }
+  } = {}
 
   private pluginsManager: PluginsManager
 
@@ -77,7 +81,7 @@ export class PluginService implements ClientHook {
   initializePlugins () {
     this.pluginsManager.loadPluginsList(this.server.getHTMLConfig())
 
-    this.pluginsManager.ensurePluginsAreLoaded('common')
+    return this.pluginsManager.ensurePluginsAreLoaded('common')
   }
 
   initializeCustomModal (customModal: CustomModalComponent) {
@@ -126,12 +130,29 @@ export class PluginService implements ClientHook {
     return this.settingsScripts[npmName]
   }
 
-  getRegisteredClientRoute (route: string) {
-    return this.clientRoutes[route]
+  getRegisteredClientRoute (route: string, parentRoute: RegisterClientRouteOptions['parentRoute']) {
+    if (!this.clientRoutes[parentRoute]) {
+      return undefined
+    }
+
+    return this.clientRoutes[parentRoute][route]
+  }
+
+  getAllRegisteredClientRoutesForParent (parentRoute: RegisterClientRouteOptions['parentRoute']) {
+    return this.clientRoutes[parentRoute]
   }
 
   getAllRegisteredClientRoutes () {
     return Object.keys(this.clientRoutes)
+      .map((parentRoute: RegisterClientRouteOptions['parentRoute']) => {
+        return Object.keys(this.clientRoutes[parentRoute])
+          .map(route => {
+            if (parentRoute === '/') return route
+
+            return parentRoute + route
+          })
+      })
+      .flat()
   }
 
   async translateSetting (npmName: string, setting: RegisterClientFormFieldOptions) {
@@ -180,11 +201,17 @@ export class PluginService implements ClientHook {
   }
 
   private onClientRoute (options: RegisterClientRouteOptions) {
+    const parentRoute = options.parentRoute || '/'
+
     const route = options.route.startsWith('/')
       ? options.route
       : `/${options.route}`
 
-    this.clientRoutes[route] = options
+    if (!this.clientRoutes[parentRoute]) {
+      this.clientRoutes[parentRoute] = {}
+    }
+
+    this.clientRoutes[parentRoute][route] = options
   }
 
   private buildPeerTubeHelpers (pluginInfo: PluginInfo): RegisterClientHelpers {
@@ -221,6 +248,10 @@ export class PluginService implements ClientHook {
                    )
 
         return firstValueFrom(obs)
+      },
+
+      getUser: () => {
+        return this.authService.getUser()
       },
 
       getServerConfig: () => {

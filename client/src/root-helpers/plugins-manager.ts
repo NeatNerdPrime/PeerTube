@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-implied-eval */
-import * as debug from 'debug'
+import debug from 'debug'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, shareReplay } from 'rxjs/operators'
 import { RegisterClientHelpers } from 'src/types/register-client-option.model'
@@ -70,7 +70,8 @@ class PluginsManager {
     'video-edit': new ReplaySubject<boolean>(1),
     'embed': new ReplaySubject<boolean>(1),
     'my-library': new ReplaySubject<boolean>(1),
-    'video-channel': new ReplaySubject<boolean>(1)
+    'video-channel': new ReplaySubject<boolean>(1),
+    'my-account': new ReplaySubject<boolean>(1)
   }
 
   private readonly peertubeHelpersFactory: PeertubeHelpersFactory
@@ -298,10 +299,10 @@ class PluginsManager {
 export {
   PluginsManager,
 
-  PluginInfo,
-  PeertubeHelpersFactory,
-  OnFormFields,
-  OnSettingsScripts
+  type PluginInfo,
+  type PeertubeHelpersFactory,
+  type OnFormFields,
+  type OnSettingsScripts
 }
 
 // ---------------------------------------------------------------------------
